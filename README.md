@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 개발 이유
 
-## Getting Started
+단어를 외워야 하는 상황은 많지만 기존 암기 앱들은 1회용 느낌이 강하고 손이 잘 안 간다. 그래서 매일 자연스럽게 접속하게 만드는 일일 퀘스트와 게이미피케이션 요소를 결합한 단어 암기 웹앱을 만들게 됐다. 단순히 단어를 외우는 것을 넘어서, 퀘스트, 코인, 상점, 레벨 같은 요소들이 공부를 게임처럼 느끼게 해주고 그 결과 꾸준한 학습으로 이어질 수 있다고 기대한다.
 
-First, run the development server:
+# 잘 외워지는 이유
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+기존의 종이 기반 암기 방식은 휴대성과 접근성이 떨어지고 반복 학습이 어렵다는 한계가 있다. 반면, 스마트폰 기반 학습은 높은 접근성을 바탕으로 언제 어디서나 학습이 가능하며, 게임 요소를 통해 사용자의 몰입도를 높여 반복 학습을 자연스럽게 유도한다. 이러한 반복 학습은 망각 곡선을 완화하여 장기 기억 형성에 긍정적인 영향을 준다
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+# 차별점
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+사용자가 스스로 설정한 단어를 학습할 수 있도록 하고, 학습 데이터를 기반으로 반복 학습을 유도하며, 이를 게임 요소와 결합하여 학습 지속성을 높인다는 점에서 기존 암기 앱과 차별화된다.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# 기술 스택:
 
-## Learn More
+- **Frontend**: Next.js
+- **Backend**: Node.js
+- **Database**: Supabase
+- **Auth**: Supabase Auth
+- **AI**: OpenAI API (Whisper, Vision)
+- **Deploy**: Vercel + Supabase
 
-To learn more about Next.js, take a look at the following resources:
+# 기능:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 기본 기능:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+우선 순위의 경우 낮을 수록 더 중요한 것이다
 
-## Deploy on Vercel
+- **인증**: 회원가입, 로그인, 로그아웃, 세션 유지
+    - **우선 순위 : 2**
+- **단어장**: 단어 추가/수정/삭제, 단어 적기/뜻 적기/셔플 모드, 틀린 것만 다시 풀기, 전부 맞히면 100점 완료
+    - **우선 순위 : 1**
+- **파티모드**: 풍선이 아래서 위로 올라오며 단어 또는 뜻 표시, 정답 입력 시 다트가 날아가 풍선 터뜨림, 시간 초과 시 탈락, 단어 적기/뜻 적기/셔플 동일 적용
+    - **우선 순위 : 2**
+- **퀘스트**: 일일 퀘스트 매일 4개 제공 (타입: 단어장 외우기/복습하기/풀콤보, 난이도에 따라 횟수·날짜 제한 및 보상 증가, 리롤 광고 1번+코인 2번), 월별 퀘스트 매월 3개 제공 (일일과 같은 타입이나 난이도 높음 + 파티모드 N판 클리어 추가, 리롤 코인 1번)
+    - **우선 순위 : 3**
+- **코인**: 퀘스트 완료/문제 풀 때/레벨 업 시 획득
+    - **우선 순위 : 3**
+- **상점**: 매일 자정 아이템 4개 무작위 진열, 리롤 무료 1번 후 코인(최대 2번) or 광고(최대 1번), 총 최대 4번 리롤로 최대 20개 열람, 판매 아이템은 힌트/테마 스킨·월페이퍼/아이콘·배너 꾸미기
+    - **우선 순위 : 4**
+- **설정:** 블랙모드/화이트 모드 선택 , 알림 선택 등
+    - **우선 순위 : 5**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 확장 기능:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- AI 파일 업로드 (CSV)
+    - **우선 순위 : 8**
+- AI 음성 입력으로 단어 추출
+    - **우선 순위 : 7**
+- AI 사진 입력으로 단어 추출
+    - **우선 순위 : 6**
+- 상점에서 재화 구매 (현금 결제 or 광고 시청)
+    - **우선 순위 : 11**
+- 광고 시청으로 상점 리롤
+    - **우선 순위 : 9**
+- 이벤트 탭 (보류)
+    - **우선 순위 : 10**
+
+# 전체적인 구조:
+
+- 메인 홈: 일일 퀘스트 + 단어장 목록 확인
+- 단어장: 일반 모드 or 파티모드 선택 후 학습, 완료 시 코인 획득
+- 상점: 코인으로 아이템 구매 or 리롤
+- 퀘스트: 일일/월별 탭으로 진행 상황 확인
+
+# UI
+
+이것은 기획한 UI이며 canva에서 만들었다
+
+[**https://canva.link/w1clfsnmfm6xle3**](https://canva.link/w1clfsnmfm6xle3)
