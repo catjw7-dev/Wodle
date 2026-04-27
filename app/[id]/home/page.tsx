@@ -18,6 +18,7 @@ export default async function HomePage({ params }: { params: Promise<{ id: strin
   return (
     <div>
       <h1>안녕하세요, {profile?.userName ?? '사용자'}님!</h1>
+      <a href={`/${id}/wordbook/new`}>새 단어장 만들기</a>
     </div>
   )
 }
