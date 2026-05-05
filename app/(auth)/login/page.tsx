@@ -40,7 +40,7 @@ export default function LoginPage() {
       {loading ? '로그인 중...' : '로그인'}
       </button>
       <a href="/signup">회원가입</a>
-      <a href="/reset-password">비밀번호를 잊으셨나요? 재설정 하러 가기</a>
+      <a href="/reset-password">비밀번호를 잊으셨나요?</a>
     </div>
   )
 }
