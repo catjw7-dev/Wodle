@@ -14,7 +14,9 @@ export default function ResetPasswordPage() {
       setError('이메일을 입력해주세요!')
       return
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://wodle.vercel.app/update-password'
+    })
     if (error) {
       setError(error.message)
       return
