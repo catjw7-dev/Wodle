@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 type Word = {
@@ -19,10 +19,10 @@ export default function ReviewPage() {
   const [result, setResult] = useState<'correct' | 'wrong' | null>(null)
   const [finished, setFinished] = useState(false)
   const [wrongCount, setWrongCount] = useState(0)
+  const [mode, setMode] = useState('term')
+  const [correctCount, setCorrectCount] = useState(0)
   const params = useParams()
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const mode = searchParams.get('mode') ?? 'term'
   const supabase = createClient()
 
   useEffect(() => {
@@ -30,6 +30,15 @@ export default function ReviewPage() {
   }, [])
 
   async function fetchWords() {
+    const { data: wordbook } = await supabase
+      .from('wordbooks')
+      .select('last_mode')
+      .eq('id', params.wid)
+      .single()
+
+    const savedMode = wordbook?.last_mode ?? 'term'
+    setMode(savedMode)
+
     const { data } = await supabase
       .from('words')
       .select('*')
@@ -39,7 +48,7 @@ export default function ReviewPage() {
     if (!data) return
 
     let list = [...data]
-    if (mode === 'shuffle') list = list.map(w => ({ ...w, showTerm: Math.random() > 0.5 }))
+    if (savedMode === 'shuffle') list = list.map(w => ({ ...w, showTerm: Math.random() > 0.5 }))
     setWords(list)
   }
 
@@ -59,6 +68,7 @@ export default function ReviewPage() {
     const correct = getAnswer(words[current])
     if (answer.trim() === correct.trim()) {
       setResult('correct')
+      setCorrectCount(prev => prev + 1)
       await supabase
         .from('words')
         .update({ wrong_count: Math.max(0, words[current].wrong_count - 1) })
@@ -83,6 +93,8 @@ export default function ReviewPage() {
     }
   }
 
+  const progress = words.length > 0 ? Math.round((correctCount / words.length) * 100) : 0
+
   if (words.length === 0) return <p>복습할 단어가 없어요!</p>
 
   if (finished) {
@@ -90,13 +102,8 @@ export default function ReviewPage() {
       <div>
         <h1>복습 완료!</h1>
         <p>틀린 단어: {wrongCount}개</p>
-        {wrongCount > 0 && (
-          <button onClick={() => router.push(`/${params.id}/wordbook/${params.wid}/review?mode=${mode}`)}>
-            틀린 것만 다시 풀기
-          </button>
-        )}
-        <button onClick={() => router.push(`/${params.id}/wordbook/${params.wid}`)}>
-          단어장으로 돌아가기
+        <button onClick={() => router.push(`/${params.id}/home`)}>
+          홈으로 돌아가기
         </button>
       </div>
     )
@@ -104,6 +111,8 @@ export default function ReviewPage() {
 
   return (
     <div>
+      <p>복습 모드</p>
+      <p>Progress: {progress}%</p>
       <p>{current + 1} / {words.length}</p>
       <h2>{getQuestion(words[current])}</h2>
       <input

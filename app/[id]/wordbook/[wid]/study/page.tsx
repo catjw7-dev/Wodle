@@ -1,6 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
+import { updateStreak } from '@/utils/streak'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -82,11 +83,12 @@ export default function StudyPage() {
     }
   }
 
-  function handleNext() {
+  async function handleNext() {
     const currentWords = isReview ? wrongWords : words
     setAnswer('')
     setResult(null)
     if (current + 1 >= currentWords.length) {
+      await updateStreak()
       setFinished(true)
     } else {
       setCurrent(prev => prev + 1)
@@ -119,6 +121,9 @@ export default function StudyPage() {
             단어장으로 돌아가기
           </button>
         )}
+        <button onClick={() => router.push(`/${params.id}/home`)}>
+          홈으로 돌아가기
+        </button>
       </div>
     )
   }
@@ -126,7 +131,7 @@ export default function StudyPage() {
   return (
     <div>
       <p>{isReview ? '틀린문제 다시 풀기' : '단어장 모드'}</p>
-      <p>{correctCount} / {currentWords.length} ({progress}%)</p>
+      <p>Progress: {progress}%</p>
       <p>{current + 1} / {currentWords.length}</p>
       <h2>{getQuestion(currentWords[current])}</h2>
       <input

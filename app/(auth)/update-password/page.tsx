@@ -2,22 +2,13 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [ready, setReady] = useState(false)
   const router = useRouter()
   const supabase = createClient()
-
-  useEffect(() => {
-    supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setReady(true)
-      }
-    })
-  }, [])
 
   async function handleUpdate() {
     if (!password.trim()) {
@@ -31,8 +22,6 @@ export default function UpdatePasswordPage() {
     }
     router.push('/')
   }
-
-  if (!ready) return <p>로딩 중...</p>
 
   return (
     <div>

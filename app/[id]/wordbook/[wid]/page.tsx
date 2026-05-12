@@ -72,6 +72,14 @@ export default function WordbookPage() {
     fetchWords()
   }
 
+  async function handleStudyStart() {
+    await supabase
+      .from('wordbooks')
+      .update({ last_mode: mode, last_order: order })
+      .eq('id', params.wid)
+    router.push(`/${params.id}/wordbook/${params.wid}/study?mode=${mode}&order=${order}`)
+  }
+
   return (
     <div>
       <h1>단어장</h1>
@@ -118,9 +126,7 @@ export default function WordbookPage() {
       {words.length === 0 ? (
         <p style={{ color: 'gray' }}>단어를 추가해주세요!</p>
       ) : (
-        <button onClick={() => router.push(`/${params.id}/wordbook/${params.wid}/study?mode=${mode}&order=${order}`)}>
-          학습 시작
-        </button>
+        <button onClick={handleStudyStart}>학습 시작</button>
       )}
     </div>
   )
