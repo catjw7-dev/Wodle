@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 type Word = {
   id: string
@@ -20,6 +20,9 @@ export default function WordbookPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTerm, setEditTerm] = useState('')
   const [editDefinition, setEditDefinition] = useState('')
+  const [suggesting, setSuggesting] = useState(false)
+  const [suggestedDef, setSuggestedDef] = useState('')
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const params = useParams()
   const router = useRouter()
   const supabase = createClient()
@@ -36,6 +39,22 @@ export default function WordbookPage() {
     setWords(data ?? [])
   }
 
+  async function suggestDefinition(value: string) {
+    if (!value.trim()) { setSuggestedDef(''); return }
+    setSuggesting(true)
+    console.log('API 요청 보냄:', value)
+    const res = await fetch('/api/suggest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ term: value })
+    })
+    console.log('응답 status:', res.status)
+    const data = await res.json()
+    console.log('응답 data:', data)
+    setSuggestedDef(data.definition)
+    setSuggesting(false)
+  }
+
   async function handleAdd() {
     if (!term.trim() || !definition.trim()) {
       setError('단어와 뜻을 입력해주세요!')
@@ -47,6 +66,7 @@ export default function WordbookPage() {
     if (error) { setError(error.message); return }
     setTerm('')
     setDefinition('')
+    setSuggestedDef('')
     setError('')
     fetchWords()
   }
@@ -84,8 +104,32 @@ export default function WordbookPage() {
     <div>
       <h1>단어장</h1>
       <div>
-        <input placeholder="단어" value={term} onChange={e => setTerm(e.target.value)} />
-        <input placeholder="뜻" value={definition} onChange={e => setDefinition(e.target.value)} />
+        <input
+          placeholder="단어"
+          value={term}
+          onChange={e => {
+            setTerm(e.target.value)
+            if (debounceTimer.current) clearTimeout(debounceTimer.current)
+            debounceTimer.current = setTimeout(() => suggestDefinition(e.target.value), 800)
+          }}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && suggestedDef && !definition) {
+              setDefinition(suggestedDef)
+              setSuggestedDef('')
+            }
+          }}
+        />
+        <input
+          placeholder={suggesting ? '추천 중...' : suggestedDef || '뜻'}
+          value={definition}
+          onChange={e => setDefinition(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !definition && suggestedDef) {
+              setDefinition(suggestedDef)
+              setSuggestedDef('')
+            }
+          }}
+        />
         {error && <p>{error}</p>}
         <button onClick={handleAdd}>추가</button>
       </div>
