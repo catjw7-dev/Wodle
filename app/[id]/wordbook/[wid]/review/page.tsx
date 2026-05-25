@@ -3,6 +3,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { awardCoins } from '@/utils/coin'
+import { checkAnswer } from '@/utils/checkAnswer'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
@@ -70,7 +71,7 @@ export default function ReviewPage() {
 
   async function handleCheck() {
     const correct = getAnswer(words[current])
-    if (answer.trim() === correct.trim()) {
+    if (checkAnswer(answer, correct)) {
       setResult('correct')
       correctRef.current += 1
       setCorrectCount(correctRef.current)

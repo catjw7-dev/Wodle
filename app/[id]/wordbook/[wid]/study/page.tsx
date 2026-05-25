@@ -4,6 +4,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { updateStreak } from '@/utils/streak'
 import { awardCoins } from '@/utils/coin'
+import { checkAnswer } from '@/utils/checkAnswer'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
@@ -66,7 +67,7 @@ export default function StudyPage() {
   async function handleCheck() {
     const currentWords = isReview ? wrongWords : words
     const correct = getAnswer(currentWords[current])
-    if (answer.trim() === correct.trim()) {
+    if (checkAnswer(answer, correct)) {
       setResult('correct')
       correctRef.current += 1
       setCorrectCount(correctRef.current)
