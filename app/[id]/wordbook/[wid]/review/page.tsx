@@ -1,8 +1,10 @@
+// app/[id]/wordbook/[wid]/review/page.tsx
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
+import { awardCoins } from '@/utils/coin'
 import { useParams, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 type Word = {
   id: string
@@ -21,6 +23,8 @@ export default function ReviewPage() {
   const [wrongCount, setWrongCount] = useState(0)
   const [mode, setMode] = useState('term')
   const [correctCount, setCorrectCount] = useState(0)
+  const [coinResult, setCoinResult] = useState<{ earned: number; bonus: number } | null>(null)
+  const correctRef = useRef(0)
   const params = useParams()
   const router = useRouter()
   const supabase = createClient()
@@ -68,7 +72,8 @@ export default function ReviewPage() {
     const correct = getAnswer(words[current])
     if (answer.trim() === correct.trim()) {
       setResult('correct')
-      setCorrectCount(prev => prev + 1)
+      correctRef.current += 1
+      setCorrectCount(correctRef.current)
       await supabase
         .from('words')
         .update({ wrong_count: Math.max(0, words[current].wrong_count - 1) })
@@ -83,10 +88,12 @@ export default function ReviewPage() {
     }
   }
 
-  function handleNext() {
+  async function handleNext() {
     setAnswer('')
     setResult(null)
     if (current + 1 >= words.length) {
+      const coins = await awardCoins(correctRef.current)
+      setCoinResult(coins)
       setFinished(true)
     } else {
       setCurrent(prev => prev + 1)
@@ -102,6 +109,12 @@ export default function ReviewPage() {
       <div>
         <h1>복습 완료!</h1>
         <p>틀린 단어: {wrongCount}개</p>
+        {coinResult && (
+          <div>
+            <p>🪙 +{coinResult.earned} 코인</p>
+            {coinResult.bonus > 0 && <p>🎁 보너스 +{coinResult.bonus} 코인!</p>}
+          </div>
+        )}
         <button onClick={() => router.push(`/${params.id}/home`)}>
           홈으로 돌아가기
         </button>

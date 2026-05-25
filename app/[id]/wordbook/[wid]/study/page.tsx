@@ -1,9 +1,11 @@
+// app/[id]/wordbook/[wid]/study/page.tsx
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
 import { updateStreak } from '@/utils/streak'
+import { awardCoins } from '@/utils/coin'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 type Word = {
   id: string
@@ -22,6 +24,8 @@ export default function StudyPage() {
   const [finished, setFinished] = useState(false)
   const [isReview, setIsReview] = useState(false)
   const [correctCount, setCorrectCount] = useState(0)
+  const [coinResult, setCoinResult] = useState<{ earned: number; bonus: number } | null>(null)
+  const correctRef = useRef(0)
   const params = useParams()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -64,7 +68,8 @@ export default function StudyPage() {
     const correct = getAnswer(currentWords[current])
     if (answer.trim() === correct.trim()) {
       setResult('correct')
-      setCorrectCount(prev => prev + 1)
+      correctRef.current += 1
+      setCorrectCount(correctRef.current)
       if (!isReview) {
         await supabase
           .from('words')
@@ -89,6 +94,10 @@ export default function StudyPage() {
     setResult(null)
     if (current + 1 >= currentWords.length) {
       await updateStreak()
+      if (!isReview) {
+        const coins = await awardCoins(correctRef.current)
+        setCoinResult(coins)
+      }
       setFinished(true)
     } else {
       setCurrent(prev => prev + 1)
@@ -102,6 +111,8 @@ export default function StudyPage() {
     setFinished(false)
     setIsReview(true)
     setCorrectCount(0)
+    correctRef.current = 0
+    setCoinResult(null)
   }
 
   const currentWords = isReview ? wrongWords : words
@@ -113,6 +124,12 @@ export default function StudyPage() {
     return (
       <div>
         <h1>완료!</h1>
+        {coinResult && (
+          <div>
+            <p>🪙 +{coinResult.earned} 코인</p>
+            {coinResult.bonus > 0 && <p>🎁 보너스 +{coinResult.bonus} 코인!</p>}
+          </div>
+        )}
         {!isReview && wrongWords.length > 0 && (
           <button onClick={startReview}>틀린문제 다시 풀기</button>
         )}
