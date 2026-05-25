@@ -2,7 +2,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useParams, useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 type Profile = {
@@ -13,17 +13,15 @@ type Profile = {
 
 export default function Navbar() {
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const router = useRouter()
-  const params = useParams()
   const supabase = createClient()
 
   useEffect(() => {
-    let userId: string
-
     async function fetchProfile() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
-      userId = user.id
+      setUserId(user.id)
 
       const { data } = await supabase
         .from('profiles')
@@ -40,7 +38,7 @@ export default function Navbar() {
             event: 'UPDATE',
             schema: 'public',
             table: 'profiles',
-            filter: `user_id=eq.${userId}`
+            filter: `user_id=eq.${user.id}`
           },
           (payload) => {
             setProfile(prev => prev ? {
@@ -60,7 +58,7 @@ export default function Navbar() {
     }
   }, [])
 
-  if (!profile) return null
+  if (!profile || !userId) return null
 
   return (
     <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', borderBottom: '1px solid #eee' }}>
@@ -70,8 +68,8 @@ export default function Navbar() {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <span>🪙 {profile.coin}</span>
-        <button onClick={() => router.push(`/${params.id}/home`)}>홈</button>
-        <button onClick={() => router.push(`/${params.id}/settings`)}>설정</button>
+        <button onClick={() => router.push(`/${userId}/home`)}>홈</button>
+        <button disabled style={{ opacity: 0.4 }}>설정</button>
       </div>
     </nav>
   )
