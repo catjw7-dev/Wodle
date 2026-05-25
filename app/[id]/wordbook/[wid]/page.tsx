@@ -1,3 +1,4 @@
+// app/[id]/wordbook/[wid]/page.tsx
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
@@ -22,7 +23,9 @@ export default function WordbookPage() {
   const [editDefinition, setEditDefinition] = useState('')
   const [suggesting, setSuggesting] = useState(false)
   const [suggestedDef, setSuggestedDef] = useState('')
+  const [visionLoading, setVisionLoading] = useState(false)
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const params = useParams()
   const router = useRouter()
   const supabase = createClient()
@@ -42,15 +45,12 @@ export default function WordbookPage() {
   async function suggestDefinition(value: string) {
     if (!value.trim()) { setSuggestedDef(''); return }
     setSuggesting(true)
-    console.log('API 요청 보냄:', value)
     const res = await fetch('/api/suggest', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ term: value })
     })
-    console.log('응답 status:', res.status)
     const data = await res.json()
-    console.log('응답 data:', data)
     setSuggestedDef(data.definition)
     setSuggesting(false)
   }
@@ -100,6 +100,51 @@ export default function WordbookPage() {
     router.push(`/${params.id}/wordbook/${params.wid}/study?mode=${mode}&order=${order}`)
   }
 
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setVisionLoading(true)
+    setError('')
+
+    const reader = new FileReader()
+    reader.onload = async () => {
+      const base64 = (reader.result as string).split(',')[1]
+      const mimeType = file.type
+
+      const res = await fetch('/api/vision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64, mimeType })
+      })
+
+      const data = await res.json()
+      const extracted: { term: string; definition: string }[] = data.words ?? []
+
+      if (extracted.length === 0) {
+        setError('사진에서 단어를 찾지 못했어요.')
+        setVisionLoading(false)
+        return
+      }
+
+      // 추출된 단어 전부 DB에 한 번에 추가
+      await supabase.from('words').insert(
+        extracted.map(w => ({
+          term: w.term,
+          definition: w.definition,
+          wordbook_id: params.wid
+        }))
+      )
+
+      fetchWords()
+      setVisionLoading(false)
+      // input 초기화 (같은 파일 다시 업로드 가능하도록)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+
+    reader.readAsDataURL(file)
+  }
+
   return (
     <div>
       <h1>단어장</h1>
@@ -132,6 +177,20 @@ export default function WordbookPage() {
         />
         {error && <p>{error}</p>}
         <button onClick={handleAdd}>추가</button>
+      </div>
+
+      <div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          style={{ display: 'none' }}
+          onChange={handleImageUpload}
+        />
+        <button onClick={() => fileInputRef.current?.click()} disabled={visionLoading}>
+          {visionLoading ? '분석 중...' : '📷 사진으로 추가'}
+        </button>
       </div>
 
       <ul>
