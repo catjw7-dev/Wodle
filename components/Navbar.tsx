@@ -1,3 +1,4 @@
+// components/Navbar.tsx
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
@@ -16,17 +17,47 @@ export default function Navbar() {
   const supabase = createClient()
 
   useEffect(() => {
+    let userId: string
+
     async function fetchProfile() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
+      userId = user.id
+
       const { data } = await supabase
         .from('profiles')
         .select('userName, Lv, coin')
         .eq('user_id', user.id)
         .single()
       setProfile(data)
+
+      // profiles 테이블 실시간 구독
+      supabase
+        .channel('navbar-profile')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `user_id=eq.${userId}`
+          },
+          (payload) => {
+            setProfile(prev => prev ? {
+              ...prev,
+              coin: payload.new.coin,
+              Lv: payload.new.Lv,
+            } : prev)
+          }
+        )
+        .subscribe()
     }
+
     fetchProfile()
+
+    return () => {
+      supabase.channel('navbar-profile').unsubscribe()
+    }
   }, [])
 
   async function handleLogout() {
