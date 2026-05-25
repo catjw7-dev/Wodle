@@ -2,7 +2,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 type Profile = {
@@ -14,6 +14,7 @@ type Profile = {
 export default function Navbar() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const router = useRouter()
+  const params = useParams()
   const supabase = createClient()
 
   useEffect(() => {
@@ -31,7 +32,6 @@ export default function Navbar() {
         .single()
       setProfile(data)
 
-      // profiles 테이블 실시간 구독
       supabase
         .channel('navbar-profile')
         .on(
@@ -60,11 +60,6 @@ export default function Navbar() {
     }
   }, [])
 
-  async function handleLogout() {
-    await supabase.auth.signOut()
-    router.push('/')
-  }
-
   if (!profile) return null
 
   return (
@@ -75,8 +70,8 @@ export default function Navbar() {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <span>🪙 {profile.coin}</span>
-        <button onClick={() => router.push('/settings')}>설정</button>
-        <button onClick={handleLogout}>로그아웃</button>
+        <button onClick={() => router.push(`/${params.id}/home`)}>홈</button>
+        <button onClick={() => router.push(`/${params.id}/settings`)}>설정</button>
       </div>
     </nav>
   )
