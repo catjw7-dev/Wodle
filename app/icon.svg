@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <clipPath id="rounded">
-    <rect width="200" height="200" rx="44"/>
-  </clipPath>
-  <rect width="200" height="200" rx="44" fill="#F97316"/>
-  <polygon points="200,0 200,200 0,200" fill="#2563EB" clip-path="url(#rounded)"/>
-  <text x="100" y="148" text-anchor="middle" fill="white" font-size="130" font-weight="800" font-family="Arial" stroke="#1E3A8A" stroke-width="6" paint-order="stroke">w</text>
-</svg>
