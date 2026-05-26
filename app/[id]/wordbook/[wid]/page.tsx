@@ -24,6 +24,7 @@ export default function WordbookPage() {
   const [suggesting, setSuggesting] = useState(false)
   const [suggestedDef, setSuggestedDef] = useState('')
   const [visionLoading, setVisionLoading] = useState(false)
+  const [visionStep, setVisionStep] = useState('')
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const params = useParams()
@@ -100,6 +101,36 @@ export default function WordbookPage() {
     router.push(`/${params.id}/wordbook/${params.wid}/study?mode=${mode}&order=${order}`)
   }
 
+  // 이미지 압축 함수
+  function compressImage(file: File): Promise<{ base64: string; mimeType: string }> {
+    return new Promise((resolve) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const MAX = 1024
+        let { width, height } = img
+        if (width > MAX || height > MAX) {
+          if (width > height) {
+            height = Math.round((height * MAX) / width)
+            width = MAX
+          } else {
+            width = Math.round((width * MAX) / height)
+            height = MAX
+          }
+        }
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0, width, height)
+        const base64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1]
+        URL.revokeObjectURL(url)
+        resolve({ base64, mimeType: 'image/jpeg' })
+      }
+      img.src = url
+    })
+  }
+
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -107,11 +138,11 @@ export default function WordbookPage() {
     setVisionLoading(true)
     setError('')
 
-    const reader = new FileReader()
-    reader.onload = async () => {
-      const base64 = (reader.result as string).split(',')[1]
-      const mimeType = file.type
+    try {
+      setVisionStep('이미지 압축 중...')
+      const { base64, mimeType } = await compressImage(file)
 
+      setVisionStep('AI가 단어 분석 중...')
       const res = await fetch('/api/vision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -124,10 +155,11 @@ export default function WordbookPage() {
       if (extracted.length === 0) {
         setError('사진에서 단어를 찾지 못했어요.')
         setVisionLoading(false)
+        setVisionStep('')
         return
       }
 
-      // 추출된 단어 전부 DB에 한 번에 추가
+      setVisionStep(`${extracted.length}개 단어 저장 중...`)
       await supabase.from('words').insert(
         extracted.map(w => ({
           term: w.term,
@@ -137,12 +169,13 @@ export default function WordbookPage() {
       )
 
       fetchWords()
+    } catch {
+      setError('오류가 발생했어요. 다시 시도해주세요.')
+    } finally {
       setVisionLoading(false)
-      // input 초기화 (같은 파일 다시 업로드 가능하도록)
+      setVisionStep('')
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
-
-    reader.readAsDataURL(file)
   }
 
   return (
@@ -189,7 +222,7 @@ export default function WordbookPage() {
           onChange={handleImageUpload}
         />
         <button onClick={() => fileInputRef.current?.click()} disabled={visionLoading}>
-          {visionLoading ? '분석 중...' : '📷 사진으로 추가'}
+          {visionLoading ? visionStep : '📷 사진으로 추가'}
         </button>
       </div>
 
